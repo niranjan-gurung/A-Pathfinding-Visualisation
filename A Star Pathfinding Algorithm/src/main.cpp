@@ -12,6 +12,12 @@ static const int mapHeight = 20;
 
 using Tile = sf::RectangleShape;
 
+// mouse flags:
+bool mouseLeftDown = false;
+bool mouseRightDown = false;
+bool startKeyDown = false;
+bool endKeyDown = false;
+
 struct Node
 {
     // init tile w/ default values:
@@ -39,7 +45,7 @@ struct Node
 void HandleTileClick(
     Node nodes[][mapHeight], 
     sf::Vector2f& mpos,
-    const sf::Color& colour = sf::Color::Red)
+    const sf::Color& colour = sf::Color::Black)
 {
     for (int i = 0; i < mapWidth; i++)
     {
@@ -85,9 +91,6 @@ int main()
         col += 28.f;
     }
 
-    // mouse flags:
-    bool isMouseDown = false;
-
     sf::Clock dt;
     while (window.isOpen())
     {
@@ -102,8 +105,32 @@ int main()
                 break;
 
             case sf::Event::MouseButtonPressed:
-                isMouseDown = true;
-                HandleTileClick(nodes, mpos);
+                switch (event.mouseButton.button)
+                {
+                case sf::Mouse::Left:
+                    if (sf::Keyboard::isKeyPressed(
+                        sf::Keyboard::S))
+                    {
+                        std::cout << "S pressed!\n";
+                        startKeyDown = true;
+                        // colour start node:
+                        // ...
+                    }
+                    if (sf::Keyboard::isKeyPressed(
+                        sf::Keyboard::E))
+                    {
+                        std::cout << "E pressed!\n";
+                        endKeyDown = true;
+                        // colour end node:
+                        // ...
+                    }
+                    mouseLeftDown = true;
+                    break;
+                
+                case sf::Mouse::Right:
+                    mouseRightDown = true;
+                    break;
+                }
                 break;
 
             case sf::Event::MouseMoved:
@@ -111,20 +138,52 @@ int main()
                 mpos = window
                     .mapPixelToCoords(
                         sf::Mouse::getPosition(window));
-
-                // mouse dragging while LMB is held down:
-                if (isMouseDown)
-                    HandleTileClick(nodes, mpos);
                 break;
             
             case sf::Event::MouseButtonReleased:
-                isMouseDown = false;
+                switch (event.mouseButton.button)
+                {
+                case sf::Mouse::Left:
+                    if (sf::Keyboard::isKeyPressed(
+                        sf::Keyboard::S))
+                    {
+                        std::cout << "S released!\n";
+                        startKeyDown = true;
+                        // colour start node:
+                        // ...
+                    }
+                    if (sf::Keyboard::isKeyPressed(
+                        sf::Keyboard::E))
+                    {
+                        std::cout << "E released!\n";
+                        endKeyDown = true;
+                        // colour end node:
+                        // ...
+                    }
+                    mouseLeftDown = false;
+                    break;
+
+                case sf::Mouse::Right:
+                    mouseRightDown = false;
+                    break;
+                }
                 break;
             }
         }
 
         ImGui::SFML::Update(
             window, dt.restart());
+
+        /*if (mouseLeftDown)
+        {
+            HandleTileClick(nodes, mpos);
+        }*/
+
+        // draw walls:
+        if (mouseRightDown)
+        {
+            HandleTileClick(nodes, mpos);
+        }
 
         /* imgui stuff: */
         ImGui::Begin("Menu");
