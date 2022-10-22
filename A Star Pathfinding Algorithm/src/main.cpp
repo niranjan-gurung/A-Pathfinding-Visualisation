@@ -3,6 +3,7 @@
 #include "../imgui/imgui-SFML.h"
 
 #include <iostream>
+#include <vector>
 
 static const int SCREEN_WIDTH = 800;
 static const int SCREEN_HEIGHT = 600;
@@ -17,6 +18,9 @@ bool mouseLeftDown = false;
 bool mouseRightDown = false;
 bool startKeyDown = false;
 bool endKeyDown = false;
+
+//bool startTileActive = false;
+//bool endTileActive = false;
 
 struct Node
 {
@@ -43,35 +47,36 @@ struct Node
 };
 
 void HandleTileClick(
-    Node nodes[][mapHeight], 
-    sf::Vector2f& mpos,
+    std::vector<Node>& nodes, 
+    const sf::Vector2f& mpos,
     const sf::Color& colour = sf::Color::Black)
 {
-    for (int i = 0; i < mapWidth; i++)
+    for (auto& row : nodes)
     {
-        for (int j = 0; j < mapHeight; j++)
+        if (row.tile
+            .getGlobalBounds().contains(mpos))
         {
-            if (nodes[i][j].tile
-                .getGlobalBounds().contains(mpos))
+            if (sf::Keyboard
+                    ::isKeyPressed(sf::Keyboard::S))
             {
-                if (sf::Keyboard::isKeyPressed(
-                    sf::Keyboard::S))
-                {
-                    nodes[i][j].tile
-                        .setFillColor(sf::Color::Green);
-                }
-                else if (sf::Keyboard::isKeyPressed(
-                    sf::Keyboard::E))
-                {
-                    nodes[i][j].tile
-                        .setFillColor(sf::Color::Red);
-                }
-                else
-                {
-                    nodes[i][j].tile
-                        .setFillColor(colour);
-                }
+                row.tile
+                    .setFillColor(sf::Color::Green);
             }
+            else if (sf::Keyboard
+                    ::isKeyPressed(sf::Keyboard::E))
+            {
+                row.tile
+                    .setFillColor(sf::Color::Red);
+            }
+            else if (sf::Mouse
+                    ::isButtonPressed(sf::Mouse::Right))
+            {
+                row.tile
+                    .setFillColor(sf::Color::White);
+            }
+            else
+                row.tile
+                    .setFillColor(colour);
         }
     }
 }
@@ -87,7 +92,7 @@ int main()
     ImGui::SFML::Init(window);
 
     // grid of nodes
-    Node nodes[mapWidth][mapHeight];
+    std::vector<Node> nodes(mapWidth * mapHeight);
 
     // hold current mouse coordinates:
     sf::Vector2f mpos;
@@ -99,7 +104,7 @@ int main()
         float row = 10.f;
         for (int j = 0; j < mapHeight; j++)
         {
-            nodes[i][j].tile
+            nodes[i + mapWidth * j].tile
                 .setPosition(row, col);
             row += 28.f;
         }
@@ -194,6 +199,12 @@ int main()
         }
 
         // draw walls:
+        if (mouseLeftDown)
+        {
+            HandleTileClick(nodes, mpos);
+        }
+
+        // remove walls:
         if (mouseRightDown)
         {
             HandleTileClick(nodes, mpos);
@@ -208,17 +219,16 @@ int main()
         if (ImGui::Button("clear"))
         {
             for (auto& row : nodes)
-                for (auto& col : row)
-                    col.tile.setFillColor(sf::Color::White);
+                row.tile
+                    .setFillColor(sf::Color::White);
         }
         ImGui::End();
 
         window.clear(sf::Color::Blue);
         
         // display grid:
-        for (int i = 0; i < mapWidth; i++)
-            for (int j = 0; j < mapHeight; j++)
-                window.draw(nodes[i][j].tile);
+        for (auto& row : nodes)
+            window.draw(row.tile);
      
         ImGui::SFML::Render(window);
         window.display();
