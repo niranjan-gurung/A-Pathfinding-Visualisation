@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A Star Pathfinding Algorithm", "A Star Pathfinding Algorithm\A Star Pathfinding Algorithm.vcxproj", "{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Debug|x64.ActiveCfg = Debug|x64
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Debug|x64.Build.0 = Debug|x64
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Debug|x86.ActiveCfg = Debug|Win32
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Debug|x86.Build.0 = Debug|Win32
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Release|x64.ActiveCfg = Release|x64
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Release|x64.Build.0 = Release|x64
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Release|x86.ActiveCfg = Release|Win32
+		{8B8255A4-4F4C-4CA8-8ADE-BA635A2E044F}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {97707339-9BB7-445B-9DA6-9293E757F948}
+	EndGlobalSection
+EndGlobal
