@@ -23,7 +23,7 @@ struct Node
     // init tile w/ default values:
     Node(
         const sf::Vector2f& size = { 25.f, 25.f },
-        const sf::Color& colour = sf::Color::Blue,
+        const sf::Color& colour = sf::Color::White,
         const float outlineThickness = 1.f,
         const sf::Color& outlineColour = sf::Color::Black)
     {
@@ -54,8 +54,23 @@ void HandleTileClick(
             if (nodes[i][j].tile
                 .getGlobalBounds().contains(mpos))
             {
-                nodes[i][j].tile
-                    .setFillColor(colour);
+                if (sf::Keyboard::isKeyPressed(
+                    sf::Keyboard::S))
+                {
+                    nodes[i][j].tile
+                        .setFillColor(sf::Color::Green);
+                }
+                else if (sf::Keyboard::isKeyPressed(
+                    sf::Keyboard::E))
+                {
+                    nodes[i][j].tile
+                        .setFillColor(sf::Color::Red);
+                }
+                else
+                {
+                    nodes[i][j].tile
+                        .setFillColor(colour);
+                }
             }
         }
     }
@@ -100,30 +115,43 @@ int main()
             ImGui::SFML::ProcessEvent(event);
             switch (event.type)
             {
+            // close window:
             case sf::Event::Closed:
                 window.close();
                 break;
 
+            // key events for choosing start + end tile:
+            case sf::Event::KeyPressed:
+                switch (event.key.code)
+                {
+                case sf::Keyboard::S:
+                    startKeyDown = true;
+                    break;
+
+                case sf::Keyboard::E:
+                    endKeyDown = true;
+                    break;
+                }
+                break;
+
+            case sf::Event::KeyReleased:
+                switch (event.key.code)
+                {
+                case sf::Keyboard::S:
+                    startKeyDown = false;
+                    break;
+
+                case sf::Keyboard::E:
+                    endKeyDown = false;
+                    break;
+                }
+                break;
+
+            // Mouse events:
             case sf::Event::MouseButtonPressed:
                 switch (event.mouseButton.button)
                 {
                 case sf::Mouse::Left:
-                    if (sf::Keyboard::isKeyPressed(
-                        sf::Keyboard::S))
-                    {
-                        std::cout << "S pressed!\n";
-                        startKeyDown = true;
-                        // colour start node:
-                        // ...
-                    }
-                    if (sf::Keyboard::isKeyPressed(
-                        sf::Keyboard::E))
-                    {
-                        std::cout << "E pressed!\n";
-                        endKeyDown = true;
-                        // colour end node:
-                        // ...
-                    }
                     mouseLeftDown = true;
                     break;
                 
@@ -132,34 +160,11 @@ int main()
                     break;
                 }
                 break;
-
-            case sf::Event::MouseMoved:
-                // current mouse position:
-                mpos = window
-                    .mapPixelToCoords(
-                        sf::Mouse::getPosition(window));
-                break;
             
             case sf::Event::MouseButtonReleased:
                 switch (event.mouseButton.button)
                 {
                 case sf::Mouse::Left:
-                    if (sf::Keyboard::isKeyPressed(
-                        sf::Keyboard::S))
-                    {
-                        std::cout << "S released!\n";
-                        startKeyDown = true;
-                        // colour start node:
-                        // ...
-                    }
-                    if (sf::Keyboard::isKeyPressed(
-                        sf::Keyboard::E))
-                    {
-                        std::cout << "E released!\n";
-                        endKeyDown = true;
-                        // colour end node:
-                        // ...
-                    }
                     mouseLeftDown = false;
                     break;
 
@@ -168,16 +173,25 @@ int main()
                     break;
                 }
                 break;
+            
+            case sf::Event::MouseMoved:
+                // current mouse position:
+                mpos = window
+                    .mapPixelToCoords(
+                        sf::Mouse::getPosition(window));
+                break;
             }
         }
 
         ImGui::SFML::Update(
             window, dt.restart());
 
-        /*if (mouseLeftDown)
+        // start/end node:
+        if (mouseLeftDown && 
+            (startKeyDown || endKeyDown))
         {
             HandleTileClick(nodes, mpos);
-        }*/
+        }
 
         // draw walls:
         if (mouseRightDown)
@@ -187,15 +201,19 @@ int main()
 
         /* imgui stuff: */
         ImGui::Begin("Menu");
+        if (ImGui::Button("visualise"))
+        {
+            // A* visualisation...
+        }
         if (ImGui::Button("clear"))
         {
             for (auto& row : nodes)
                 for (auto& col : row)
-                    col.tile.setFillColor(sf::Color::Blue);
+                    col.tile.setFillColor(sf::Color::White);
         }
         ImGui::End();
 
-        window.clear(sf::Color::White);
+        window.clear(sf::Color::Blue);
         
         // display grid:
         for (int i = 0; i < mapWidth; i++)
