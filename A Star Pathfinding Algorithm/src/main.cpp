@@ -38,13 +38,22 @@ struct Node
     }
 
     // individual grid squares:
-    Tile tile;
+    Tile tile;  
 
-    /* TODO: */
-    // @parent node
-    // @neighbour nodes
-    // @hcost, fcost, gcost etc.
+    Node* parent;
+
+    // surround nodes for any given node
+    std::vector<Node*> neighbours;
 };
+
+Node* startNode = nullptr;
+Node* endNode = nullptr;
+
+/* Main Algorithm : */
+void AStarAlgorithm()
+{
+    // ...
+}
 
 void HandleTileClick(
     std::vector<Node>& nodes, 
@@ -53,6 +62,7 @@ void HandleTileClick(
 {
     for (auto& row : nodes)
     {
+        // if tile click...
         if (row.tile
             .getGlobalBounds().contains(mpos))
         {
@@ -61,12 +71,14 @@ void HandleTileClick(
             {
                 row.tile
                     .setFillColor(sf::Color::Green);
+                startNode = &row;
             }
             else if (sf::Keyboard
                     ::isKeyPressed(sf::Keyboard::E))
             {
                 row.tile
                     .setFillColor(sf::Color::Red);
+                endNode = &row;
             }
             else if (sf::Mouse
                     ::isButtonPressed(sf::Mouse::Right))
@@ -75,8 +87,10 @@ void HandleTileClick(
                     .setFillColor(sf::Color::White);
             }
             else
+            {
                 row.tile
                     .setFillColor(colour);
+            }
         }
     }
 }
@@ -97,18 +111,61 @@ int main()
     // hold current mouse coordinates:
     sf::Vector2f mpos;
 
-    float col = 10.f; 
     // setup tile position as grid:
-    for (int i = 0; i < mapWidth; i++)
+    float col = 10.f; 
+    for (int x = 0; x < mapWidth; x++)
     {
         float row = 10.f;
-        for (int j = 0; j < mapHeight; j++)
+        for (int y = 0; y < mapHeight; y++)
         {
-            nodes[i + mapWidth * j].tile
+            nodes[x + mapWidth * y].tile
                 .setPosition(row, col);
             row += 28.f;
         }
         col += 28.f;
+    }
+
+    // create references for current node with neighbours (surrouding nodes):
+    for (int x = 0; x < mapWidth; x++)
+    {
+        for (int y = 0; y < mapHeight; y++)
+        {
+            // N-E-S-W connections:
+            // top node
+            if (y > 0)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[x + mapWidth * (y - 1)]);
+            // bottom node
+            if (y < mapHeight - 1)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[x + mapWidth * (y + 1)]);
+            // left node
+            if (x > 0)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * y]);
+            // right node
+            if (x < mapWidth - 1)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * y]);
+
+            // diagonal connections:
+            // top left
+            if (y > 0 && x > 0)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y - 1)]);
+            // bottom left
+            if (y < mapHeight - 1 && x > 0)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y + 1)]);
+            // top right
+            if (y > 0 && x < mapWidth - 1)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y - 1)]);
+            // bottom right
+            if (y < mapHeight - 1 && x < mapWidth - 1)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y + 1)]);
+        }
     }
 
     sf::Clock dt;
@@ -194,27 +251,22 @@ int main()
         // start/end node:
         if (mouseLeftDown && 
             (startKeyDown || endKeyDown))
-        {
             HandleTileClick(nodes, mpos);
-        }
 
         // draw walls:
         if (mouseLeftDown)
-        {
             HandleTileClick(nodes, mpos);
-        }
 
         // remove walls:
         if (mouseRightDown)
-        {
             HandleTileClick(nodes, mpos);
-        }
 
         /* imgui stuff: */
         ImGui::Begin("Menu");
         if (ImGui::Button("visualise"))
         {
-            // A* visualisation...
+            // A* visualisation..
+            AStarAlgorithm();
         }
         if (ImGui::Button("clear"))
         {
