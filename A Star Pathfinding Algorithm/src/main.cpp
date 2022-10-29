@@ -19,8 +19,9 @@ bool mouseRightDown = false;
 bool startKeyDown = false;
 bool endKeyDown = false;
 
-//bool startTileActive = false;
-//bool endTileActive = false;
+// represents the distance between each node.
+// set as 1... but can be assumed as any value:
+const float nodeDistance = 1.0f;
 
 struct Node
 {
@@ -40,19 +41,38 @@ struct Node
     // individual grid squares:
     Tile tile;  
 
-    Node* parent;
+    Node* parent = nullptr;
 
-    // surround nodes for any given node
+    // surrounding nodes for any given node
     std::vector<Node*> neighbours;
+
+    // if a node has been visited during a search
+    bool visited = false;
+
+    float gcost = 0.0f;    // distance from start node
+    float hcost = 0.0f;    // distance from end node (heuristic)
+    float fcost = 0.0f;    // g + h = fcost
 };
 
 Node* startNode = nullptr;
 Node* endNode = nullptr;
 
 /* Main Algorithm : */
-void AStarAlgorithm()
+void AStarAlgorithm(std::vector<Node>& nodes)
 {
-    // ...
+    // Default state for each node,
+    // reset after each solve:
+    for (int x = 0; x < mapWidth; x++)
+    {
+        for (int y = 0; y < mapHeight; y++)
+        {
+            nodes[x + mapWidth * y].visited = false;
+            nodes[x + mapWidth * y].parent = nullptr;
+            nodes[x + mapWidth * y].gcost = 0.0f;
+            nodes[x + mapWidth * y].hcost = 0.0f;
+            nodes[x + mapWidth * y].fcost = 0.0f;
+        }
+    }
 }
 
 void HandleTileClick(
@@ -95,24 +115,10 @@ void HandleTileClick(
     }
 }
 
-/* TODO: */
-// heap allocate... then map 2d array to 1d.
-int main()
+void InitGridConnections(std::vector<Node>& nodes)
 {
-    // sfml + imgui window inits:
-    sf::RenderWindow window(
-        sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT),
-        "A* Pathfinding Algorithm");
-    ImGui::SFML::Init(window);
-
-    // grid of nodes
-    std::vector<Node> nodes(mapWidth * mapHeight);
-
-    // hold current mouse coordinates:
-    sf::Vector2f mpos;
-
     // setup tile position as grid:
-    float col = 10.f; 
+    float col = 10.f;
     for (int x = 0; x < mapWidth; x++)
     {
         float row = 10.f;
@@ -166,6 +172,34 @@ int main()
                 nodes[x + mapWidth * y]
                     .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y + 1)]);
         }
+    }
+}
+
+int main()
+{
+    // sfml + imgui window inits:
+    sf::RenderWindow window(
+        sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT),
+        "A* Pathfinding Algorithm");
+    ImGui::SFML::Init(window);
+
+    // grid of nodes
+    std::vector<Node> nodes(mapWidth * mapHeight);
+
+    // hold current mouse coordinates:
+    sf::Vector2f mpos;
+
+    InitGridConnections(nodes);
+
+    if (startNode && endNode)
+    {
+        // N-E-S-W:
+        startNode->neighbours[0]->gcost = nodeDistance * 10;
+        //startNode->neighbours[1]->gcost = nodeDistance * 10;
+        //startNode->neighbours[2]->gcost = nodeDistance * 10;
+        //startNode->neighbours[3]->gcost = nodeDistance * 10;
+        // diagonals:
+        // ...
     }
 
     sf::Clock dt;
@@ -245,6 +279,7 @@ int main()
             }
         }
 
+        /* Update */
         ImGui::SFML::Update(
             window, dt.restart());
 
@@ -261,12 +296,27 @@ int main()
         if (mouseRightDown)
             HandleTileClick(nodes, mpos);
 
+        /* both start and end node has to be set for algorithm to execute,
+         * and path to be drawn */
+        if (startNode && endNode)
+        {
+            Node* tracker = endNode;
+            while (tracker->parent)
+            {
+                // continue to update tracker to current node's parent until start node is reached:
+                tracker = tracker->parent;
+ 
+                // colour in found path in different colour... yellow?
+                tracker->tile.setFillColor(sf::Color::Yellow);
+            }
+        }
+
         /* imgui stuff: */
         ImGui::Begin("Menu");
         if (ImGui::Button("visualise"))
         {
             // A* visualisation..
-            AStarAlgorithm();
+            AStarAlgorithm(nodes);
         }
         if (ImGui::Button("clear"))
         {
@@ -276,6 +326,7 @@ int main()
         }
         ImGui::End();
 
+        /* Render */
         window.clear(sf::Color::Blue);
         
         // display grid:
