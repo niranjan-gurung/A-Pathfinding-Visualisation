@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 static const int SCREEN_WIDTH = 800;
 static const int SCREEN_HEIGHT = 600;
@@ -22,6 +23,7 @@ bool endKeyDown = false;
 // represents the distance between each node.
 // set as 1... but can be assumed as any value:
 const float nodeDistance = 1.0f;
+const float nodeDiagonalDistance = 1.4f;
 
 struct Node
 {
@@ -52,78 +54,38 @@ struct Node
     float gcost = 0.0f;    // distance from start node
     float hcost = 0.0f;    // distance from end node (heuristic)
     float fcost = 0.0f;    // g + h = fcost
+    
+    // helper function
+    // return tile x, y coords:
+    auto GetTilePosition() 
+    {
+        return sf::Vector2f(
+            tile.getPosition().x, 
+            tile.getPosition().y);
+    }
 };
 
 Node* startNode = nullptr;
 Node* endNode = nullptr;
 
-/* Main Algorithm : */
-void AStarAlgorithm(std::vector<Node>& nodes)
-{
-    // Default state for each node,
-    // reset after each solve:
-    for (int x = 0; x < mapWidth; x++)
-    {
-        for (int y = 0; y < mapHeight; y++)
-        {
-            nodes[x + mapWidth * y].visited = false;
-            nodes[x + mapWidth * y].parent = nullptr;
-            nodes[x + mapWidth * y].gcost = 0.0f;
-            nodes[x + mapWidth * y].hcost = 0.0f;
-            nodes[x + mapWidth * y].fcost = 0.0f;
-        }
-    }
-}
-
-void HandleTileClick(
-    std::vector<Node>& nodes, 
-    const sf::Vector2f& mpos,
-    const sf::Color& colour = sf::Color::Black)
-{
-    for (auto& row : nodes)
-    {
-        // if tile click...
-        if (row.tile
-            .getGlobalBounds().contains(mpos))
-        {
-            if (sf::Keyboard
-                    ::isKeyPressed(sf::Keyboard::S))
-            {
-                row.tile
-                    .setFillColor(sf::Color::Green);
-                startNode = &row;
-            }
-            else if (sf::Keyboard
-                    ::isKeyPressed(sf::Keyboard::E))
-            {
-                row.tile
-                    .setFillColor(sf::Color::Red);
-                endNode = &row;
-            }
-            else if (sf::Mouse
-                    ::isButtonPressed(sf::Mouse::Right))
-            {
-                row.tile
-                    .setFillColor(sf::Color::White);
-            }
-            else
-            {
-                row.tile
-                    .setFillColor(colour);
-            }
-        }
-    }
-}
-
 void InitGridConnections(std::vector<Node>& nodes)
 {
     // setup tile position as grid:
-    float col = 10.f;
+    float col = 20.f;
     for (int x = 0; x < mapWidth; x++)
     {
-        float row = 10.f;
+        float row = 20.f;
         for (int y = 0; y < mapHeight; y++)
         {
+            // set origin to center of each node:
+            nodes[x + mapWidth * y].tile
+                .setOrigin(
+                    sf::Vector2f(
+                        nodes[x + mapWidth * y].tile.getPosition().x + 
+                        (nodes[x + mapWidth * y].tile.getGlobalBounds().width / 2), 
+                        nodes[x + mapWidth * y].tile.getPosition().y + 
+                        (nodes[x + mapWidth * y].tile.getGlobalBounds().height / 2)));
+
             nodes[x + mapWidth * y].tile
                 .setPosition(row, col);
             row += 28.f;
@@ -175,6 +137,87 @@ void InitGridConnections(std::vector<Node>& nodes)
     }
 }
 
+void HandleTileClick(
+    std::vector<Node>& nodes, 
+    const sf::Vector2f& mpos,
+    const sf::Color& colour = sf::Color::Black)
+{
+    for (auto& row : nodes)
+    {
+        // if tile click...
+        if (row.tile
+            .getGlobalBounds().contains(mpos))
+        {
+            if (sf::Keyboard
+                    ::isKeyPressed(sf::Keyboard::S))
+            {
+                row.tile
+                    .setFillColor(sf::Color::Green);
+                startNode = &row;
+            }
+            else if (sf::Keyboard
+                    ::isKeyPressed(sf::Keyboard::E))
+            {
+                row.tile
+                    .setFillColor(sf::Color::Red);
+                endNode = &row;
+            }
+            else if (sf::Mouse
+                    ::isButtonPressed(sf::Mouse::Right))
+            {
+                row.tile
+                    .setFillColor(sf::Color::White);
+            }
+            else
+            {
+                row.tile
+                    .setFillColor(colour);
+            }
+        }
+    }
+}
+
+/* Main Algorithm : */
+void AStarAlgorithm(std::vector<Node>& nodes)
+{
+    // Default state for each node,
+    // reset after each solve:
+    for (int x = 0; x < mapWidth; x++)
+    {
+        for (int y = 0; y < mapHeight; y++)
+        {
+            nodes[x + mapWidth * y].visited = false;
+            nodes[x + mapWidth * y].parent = nullptr;
+            nodes[x + mapWidth * y].gcost = 0.0f;
+            nodes[x + mapWidth * y].hcost = 0.0f;
+            nodes[x + mapWidth * y].fcost = 0.0f;
+        }
+    }
+
+    auto distance = [](Node* a, Node* b)
+    {
+        return sqrtf(
+            (a->GetTilePosition().x - b->GetTilePosition().x) * (a->GetTilePosition().x - b->GetTilePosition().x) + 
+            (a->GetTilePosition().y - b->GetTilePosition().y) * (a->GetTilePosition().y - b->GetTilePosition().y));
+    };
+
+    std::cout << distance(startNode, endNode) << std::endl;
+
+    // calculate gcost and hcost of startnode's immediate neighbours:
+    Node* currentNode = startNode;
+    currentNode->hcost = 0.0f;  // heuristic
+    
+    for (int i = 0; i < currentNode->neighbours.size(); i++)    
+    {
+        // N-E-S-W:
+        if (i < 4)
+            currentNode->neighbours[i]->gcost = nodeDistance * 10.0f;
+        // Diagonals:
+        else 
+            currentNode->neighbours[i]->gcost = nodeDiagonalDistance * 10.0f;
+    }
+}
+
 int main()
 {
     // sfml + imgui window inits:
@@ -190,17 +233,6 @@ int main()
     sf::Vector2f mpos;
 
     InitGridConnections(nodes);
-
-    if (startNode && endNode)
-    {
-        // N-E-S-W:
-        startNode->neighbours[0]->gcost = nodeDistance * 10;
-        //startNode->neighbours[1]->gcost = nodeDistance * 10;
-        //startNode->neighbours[2]->gcost = nodeDistance * 10;
-        //startNode->neighbours[3]->gcost = nodeDistance * 10;
-        // diagonals:
-        // ...
-    }
 
     sf::Clock dt;
     while (window.isOpen())
@@ -298,18 +330,18 @@ int main()
 
         /* both start and end node has to be set for algorithm to execute,
          * and path to be drawn */
-        if (startNode && endNode)
-        {
-            Node* tracker = endNode;
-            while (tracker->parent)
-            {
-                // continue to update tracker to current node's parent until start node is reached:
-                tracker = tracker->parent;
+        //if (startNode && endNode)
+        //{
+        //    Node* tracker = endNode;
+        //    while (tracker->parent)
+        //    {
+        //        // continue to update tracker to current node's parent until start node is reached:
+        //        tracker = tracker->parent;
  
-                // colour in found path in different colour... yellow?
-                tracker->tile.setFillColor(sf::Color::Yellow);
-            }
-        }
+        //        // colour in found path in different colour... yellow?
+        //        tracker->tile.setFillColor(sf::Color::Yellow);
+        //    }
+        //}
 
         /* imgui stuff: */
         ImGui::Begin("Menu");
@@ -318,6 +350,7 @@ int main()
             // A* visualisation..
             AStarAlgorithm(nodes);
         }
+
         if (ImGui::Button("clear"))
         {
             for (auto& row : nodes)
