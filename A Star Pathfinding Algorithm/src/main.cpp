@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <vector>
-#include <cmath>
+#include <iomanip>
 
 static const int SCREEN_WIDTH = 800;
 static const int SCREEN_HEIGHT = 600;
@@ -19,11 +19,6 @@ bool mouseLeftDown = false;
 bool mouseRightDown = false;
 bool startKeyDown = false;
 bool endKeyDown = false;
-
-// represents the distance between each node.
-// set as 1... but can be assumed as any value:
-const float nodeDistance = 1.0f;
-const float nodeDiagonalDistance = 1.4f;
 
 struct Node
 {
@@ -43,21 +38,22 @@ struct Node
     // individual grid squares:
     Tile tile;  
 
+    // track current node's parent:
     Node* parent = nullptr;
 
-    // surrounding nodes for any given node
+    // surrounding nodes for any given node:
     std::vector<Node*> neighbours;
 
-    // if a node has been visited during a search
+    // if a node has been visited during a search:
     bool visited = false;
 
     float gcost = 0.0f;    // distance from start node
     float hcost = 0.0f;    // distance from end node (heuristic)
     float fcost = 0.0f;    // g + h = fcost
-    
-    // helper function
+
+    // helper function,
     // return tile x, y coords:
-    auto GetTilePosition() 
+    auto GetTilePosition()
     {
         return sf::Vector2f(
             tile.getPosition().x, 
@@ -103,6 +99,10 @@ void InitGridConnections(std::vector<Node>& nodes)
             if (y > 0)
                 nodes[x + mapWidth * y]
                     .neighbours.push_back(&nodes[x + mapWidth * (y - 1)]);
+            // right node
+            if (x < mapWidth - 1)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * y]);
             // bottom node
             if (y < mapHeight - 1)
                 nodes[x + mapWidth * y]
@@ -111,20 +111,12 @@ void InitGridConnections(std::vector<Node>& nodes)
             if (x > 0)
                 nodes[x + mapWidth * y]
                     .neighbours.push_back(&nodes[(x - 1) + mapWidth * y]);
-            // right node
-            if (x < mapWidth - 1)
-                nodes[x + mapWidth * y]
-                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * y]);
 
             // diagonal connections:
             // top left
             if (y > 0 && x > 0)
                 nodes[x + mapWidth * y]
                     .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y - 1)]);
-            // bottom left
-            if (y < mapHeight - 1 && x > 0)
-                nodes[x + mapWidth * y]
-                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y + 1)]);
             // top right
             if (y > 0 && x < mapWidth - 1)
                 nodes[x + mapWidth * y]
@@ -133,6 +125,10 @@ void InitGridConnections(std::vector<Node>& nodes)
             if (y < mapHeight - 1 && x < mapWidth - 1)
                 nodes[x + mapWidth * y]
                     .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y + 1)]);
+            // bottom left
+            if (y < mapHeight - 1 && x > 0)
+                nodes[x + mapWidth * y]
+                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y + 1)]);
         }
     }
 }
@@ -194,27 +190,48 @@ void AStarAlgorithm(std::vector<Node>& nodes)
         }
     }
 
-    auto distance = [](Node* a, Node* b)
+    // lambda returns distance between any two given tiles:
+    auto distance = [](Node* a, Node* b) -> float
     {
         return sqrtf(
-            (a->GetTilePosition().x - b->GetTilePosition().x) * (a->GetTilePosition().x - b->GetTilePosition().x) + 
+            (a->GetTilePosition().x - b->GetTilePosition().x) * (a->GetTilePosition ().x - b->GetTilePosition().x) +
             (a->GetTilePosition().y - b->GetTilePosition().y) * (a->GetTilePosition().y - b->GetTilePosition().y));
     };
 
-    std::cout << distance(startNode, endNode) << std::endl;
+    // determine distance between current node's neighbour and endnode:
+    auto heuristic = [distance](Node* a, Node* b) -> float
+    {
+        return distance(a, b);
+    };
 
-    // calculate gcost and hcost of startnode's immediate neighbours:
+    std::cout 
+        << "distance between start and end node: " 
+        << std::fixed << std::setprecision(0)           // truncate the decimal places (viewing whole numbers is nicer)
+        << distance(startNode, endNode) << "\n\n";
+
+    // temp Node to always track current node:
     Node* currentNode = startNode;
-    currentNode->hcost = 0.0f;  // heuristic
     
+    /* set gcost for surrounding neighbours of currentNode(startnode by default):
+     * neighbour list order is: top, right, down, left, top-left, bottom-left, top-right, bottom-right
+     */
     for (int i = 0; i < currentNode->neighbours.size(); i++)    
     {
-        // N-E-S-W:
-        if (i < 4)
-            currentNode->neighbours[i]->gcost = nodeDistance * 10.0f;
-        // Diagonals:
-        else 
-            currentNode->neighbours[i]->gcost = nodeDiagonalDistance * 10.0f;
+        Node* currentNeighbour = currentNode->neighbours[i];
+
+        // calculate gcost of immediate neighbours:
+        currentNode->neighbours[i]->gcost 
+            = distance(currentNode, currentNeighbour);
+
+        // calculate hcost (heuristic) of immediate neighbours:
+        currentNode->neighbours[i]->hcost 
+            = heuristic(currentNeighbour, endNode);
+        
+        std::cout
+            << "gcost: "
+            << distance(currentNode, currentNeighbour) << "\t"
+            << "hcost: "
+            << heuristic(currentNeighbour, endNode) << "\n";
     }
 }
 
