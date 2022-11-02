@@ -3,8 +3,10 @@
 #include "../imgui/imgui-SFML.h"
 
 #include <iostream>
-#include <vector>
 #include <iomanip>
+#include <vector>
+#include <algorithm>
+#include <list>
 
 static const int SCREEN_WIDTH = 800;
 static const int SCREEN_HEIGHT = 600;
@@ -211,28 +213,43 @@ void AStarAlgorithm(std::vector<Node>& nodes)
 
     // temp Node to always track current node:
     Node* currentNode = startNode;
+    // setup initial g and h cost values:
+    currentNode->gcost = 0.0f;
+    currentNode->hcost = heuristic(startNode, endNode);
     
     /* set gcost for surrounding neighbours of currentNode(startnode by default):
      * neighbour list order is: top, right, down, left, top-left, bottom-left, top-right, bottom-right
      */
-    for (int i = 0; i < currentNode->neighbours.size(); i++)    
+    for (auto& currentNeighbour : currentNode->neighbours)
     {
-        Node* currentNeighbour = currentNode->neighbours[i];
-
         // calculate gcost of immediate neighbours:
-        currentNode->neighbours[i]->gcost 
+        currentNeighbour->gcost 
             = distance(currentNode, currentNeighbour);
-
-        // calculate hcost (heuristic) of immediate neighbours:
-        currentNode->neighbours[i]->hcost 
-            = heuristic(currentNeighbour, endNode);
         
+        // calculate hcost (heuristic) of immediate neighbours:
+        currentNeighbour->hcost 
+            = heuristic(currentNeighbour, endNode);
+
+        // fcost = sum of gcost & hcost:
+        currentNeighbour->fcost 
+            = currentNeighbour->gcost + currentNeighbour->hcost;
+    
+        // tile has been checked:
+        currentNode->visited = true;
+        currentNeighbour->visited = true;
+
         std::cout
             << "gcost: "
             << distance(currentNode, currentNeighbour) << "\t"
             << "hcost: "
-            << heuristic(currentNeighbour, endNode) << "\n";
+            << heuristic(currentNeighbour, endNode) << "\t"
+            << "fcost: "
+            << currentNeighbour->fcost << "\n";
     }
+
+    // pick lowest fcost and set it as new start node.
+    // set new start node's parent.
+    // re run a* algorithm.
 }
 
 int main()
