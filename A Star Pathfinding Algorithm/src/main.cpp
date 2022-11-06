@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <vector>
 #include <algorithm>
-#include <list>
 
 static const int SCREEN_WIDTH = 800;
 static const int SCREEN_HEIGHT = 600;
@@ -21,6 +20,8 @@ bool mouseLeftDown = false;
 bool mouseRightDown = false;
 bool startKeyDown = false;
 bool endKeyDown = false;
+
+bool algorithmStart = false;
 
 struct Node
 {
@@ -48,6 +49,9 @@ struct Node
 
     // if a node has been visited during a search:
     bool visited = false;
+    
+    // walls:
+    bool obstacle = false;
 
     float gcost = 0.0f;    // distance from start node
     float hcost = 0.0f;    // distance from end node (heuristic)
@@ -175,28 +179,26 @@ void HandleTileClick(
     }
 }
 
+void RetracePath(Node* start, Node* end)
+{
+    Node* tracker = endNode;
+    while (tracker->parent != nullptr)
+    {
+        // continue to update tracker to current node's parent until start node is reached:
+        tracker = tracker->parent;
+        // colour in found path in different colour... yellow?
+        tracker->tile.setFillColor(sf::Color::Yellow);
+    }
+}
+
 /* Main Algorithm : */
 void AStarAlgorithm(std::vector<Node>& nodes)
 {
-    // Default state for each node,
-    // reset after each solve:
-    for (int x = 0; x < mapWidth; x++)
-    {
-        for (int y = 0; y < mapHeight; y++)
-        {
-            nodes[x + mapWidth * y].visited = false;
-            nodes[x + mapWidth * y].parent = nullptr;
-            nodes[x + mapWidth * y].gcost = 0.0f;
-            nodes[x + mapWidth * y].hcost = 0.0f;
-            nodes[x + mapWidth * y].fcost = 0.0f;
-        }
-    }
-
     // lambda returns distance between any two given tiles:
     auto distance = [](Node* a, Node* b) -> float
     {
         return sqrtf(
-            (a->GetTilePosition().x - b->GetTilePosition().x) * (a->GetTilePosition ().x - b->GetTilePosition().x) +
+            (a->GetTilePosition().x - b->GetTilePosition().x) * (a->GetTilePosition().x - b->GetTilePosition().x) + 
             (a->GetTilePosition().y - b->GetTilePosition().y) * (a->GetTilePosition().y - b->GetTilePosition().y));
     };
 
@@ -206,50 +208,71 @@ void AStarAlgorithm(std::vector<Node>& nodes)
         return distance(a, b);
     };
 
-    std::cout 
-        << "distance between start and end node: " 
-        << std::fixed << std::setprecision(0)           // truncate the decimal places (viewing whole numbers is nicer)
-        << distance(startNode, endNode) << "\n\n";
+    std::vector<Node*> openList{};
+    std::vector<Node*> closedList{};
+    openList.push_back(startNode);
 
-    // temp Node to always track current node:
-    Node* currentNode = startNode;
-    // setup initial g and h cost values:
-    currentNode->gcost = 0.0f;
-    currentNode->hcost = heuristic(startNode, endNode);
-    
-    /* set gcost for surrounding neighbours of currentNode(startnode by default):
-     * neighbour list order is: top, right, down, left, top-left, bottom-left, top-right, bottom-right
-     */
-    for (auto& currentNeighbour : currentNode->neighbours)
+    while (!openList.empty())
     {
-        // calculate gcost of immediate neighbours:
-        currentNeighbour->gcost 
-            = distance(currentNode, currentNeighbour);
-        
-        // calculate hcost (heuristic) of immediate neighbours:
-        currentNeighbour->hcost 
-            = heuristic(currentNeighbour, endNode);
+        std::cout << "inside while...\n";
 
-        // fcost = sum of gcost & hcost:
-        currentNeighbour->fcost 
-            = currentNeighbour->gcost + currentNeighbour->hcost;
-    
-        // tile has been checked:
-        currentNode->visited = true;
-        currentNeighbour->visited = true;
+        Node* currentNode = openList.front();
 
-        std::cout
-            << "gcost: "
-            << distance(currentNode, currentNeighbour) << "\t"
-            << "hcost: "
-            << heuristic(currentNeighbour, endNode) << "\t"
-            << "fcost: "
-            << currentNeighbour->fcost << "\n";
+        // find lowest fcost node from openlist:
+        for (int i = 1; i < openList.size(); i++)
+        {
+            if (openList[i]->fcost < currentNode->fcost 
+                || openList[i]->fcost == currentNode->fcost 
+                && openList[i]->hcost < currentNode->hcost)
+            {
+                currentNode = openList[i];
+            }
+        }
+
+        // remove searched node from openlist
+        // place them in closed list:
+        openList.pop_back();
+        closedList.push_back(currentNode);
+
+        // end goal reached:
+        if (currentNode == endNode)
+        {
+            std::cout << "found path!\n";
+            RetracePath(startNode, endNode);
+            algorithmStart = false;
+            return;
+        }
+
+        /* set gcost for surrounding neighbours of currentNode(startnode by default):
+         * neighbour list order is: top, right, down, left, top-left, bottom-left, top-right, bottom-right
+         */
+        for (auto& currentNeighbour : currentNode->neighbours)
+        {
+            std::cout << "inside for...\n";
+
+            if (std::find(
+                    closedList.begin(), 
+                    closedList.end(), 
+                    currentNeighbour) != closedList.end())
+                continue;
+
+            float costToMove = 
+                currentNode->gcost + distance(currentNode, currentNeighbour);
+
+            if (!(std::find(
+                    openList.begin(),
+                    openList.end(),
+                    currentNeighbour) != openList.end()))
+                openList.push_back(currentNeighbour);
+            else if (costToMove >= currentNeighbour->gcost)
+                continue;
+            
+            currentNeighbour->parent = currentNode;
+            currentNeighbour->gcost = costToMove;
+            currentNeighbour->hcost = heuristic(currentNeighbour, endNode);
+            currentNeighbour->fcost = currentNeighbour->gcost + currentNeighbour->hcost;
+        }
     }
-
-    // pick lowest fcost and set it as new start node.
-    // set new start node's parent.
-    // re run a* algorithm.
 }
 
 int main()
@@ -362,28 +385,17 @@ int main()
         if (mouseRightDown)
             HandleTileClick(nodes, mpos);
 
-        /* both start and end node has to be set for algorithm to execute,
-         * and path to be drawn */
-        //if (startNode && endNode)
-        //{
-        //    Node* tracker = endNode;
-        //    while (tracker->parent)
-        //    {
-        //        // continue to update tracker to current node's parent until start node is reached:
-        //        tracker = tracker->parent;
- 
-        //        // colour in found path in different colour... yellow?
-        //        tracker->tile.setFillColor(sf::Color::Yellow);
-        //    }
-        //}
-
-        /* imgui stuff: */
-        ImGui::Begin("Menu");
-        if (ImGui::Button("visualise"))
+        if (algorithmStart)
         {
             // A* visualisation..
             AStarAlgorithm(nodes);
         }
+
+        /* imgui stuff: */
+        ImGui::Begin("Menu");
+
+        if (ImGui::Button("visualise"))
+            algorithmStart = true;
 
         if (ImGui::Button("clear"))
         {
