@@ -5,7 +5,6 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <algorithm>
 
 static const int SCREEN_WIDTH = 800;
 static const int SCREEN_HEIGHT = 600;
@@ -15,13 +14,13 @@ static const int mapHeight = 20;
 
 using Tile = sf::RectangleShape;
 
+bool algorithmStart = false;
+
 // mouse flags:
 bool mouseLeftDown = false;
 bool mouseRightDown = false;
 bool startKeyDown = false;
 bool endKeyDown = false;
-
-bool algorithmStart = false;
 
 struct Node
 {
@@ -192,9 +191,9 @@ void RetracePath(Node* start, Node* end)
 }
 
 /* Main Algorithm : */
-void AStarAlgorithm(std::vector<Node>& nodes)
+void AStarAlgorithm()
 {
-    // lambda returns distance between any two given tiles:
+    // returns distance between any two given tiles:
     auto distance = [](Node* a, Node* b) -> float
     {
         return sqrtf(
@@ -203,19 +202,21 @@ void AStarAlgorithm(std::vector<Node>& nodes)
     };
 
     // determine distance between current node's neighbour and endnode:
+    // (same as distance function basically..)
     auto heuristic = [distance](Node* a, Node* b) -> float
     {
         return distance(a, b);
     };
 
+    // list of nodes to test:
     std::vector<Node*> openList{};
+    // list of tested nodes:
     std::vector<Node*> closedList{};
     openList.push_back(startNode);
 
     while (!openList.empty())
     {
         std::cout << "inside while...\n";
-
         Node* currentNode = openList.front();
 
         // find lowest fcost node from openlist:
@@ -385,11 +386,9 @@ int main()
         if (mouseRightDown)
             HandleTileClick(nodes, mpos);
 
+        // A* visualisation..
         if (algorithmStart)
-        {
-            // A* visualisation..
-            AStarAlgorithm(nodes);
-        }
+            AStarAlgorithm();
 
         /* imgui stuff: */
         ImGui::Begin("Menu");
@@ -398,11 +397,9 @@ int main()
             algorithmStart = true;
 
         if (ImGui::Button("clear"))
-        {
             for (auto& row : nodes)
                 row.tile
                     .setFillColor(sf::Color::White);
-        }
         ImGui::End();
 
         /* Render */
