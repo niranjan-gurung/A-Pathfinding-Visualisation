@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <cmath>
 
 static const int SCREEN_WIDTH = 800;
 static const int SCREEN_HEIGHT = 600;
@@ -45,9 +46,6 @@ struct Node
 
     // surrounding nodes for any given node:
     std::vector<Node*> neighbours;
-
-    // if a node has been visited during a search:
-    bool visited = false;
     
     // walls:
     bool obstacle = false;
@@ -181,8 +179,7 @@ void HandleTileClick(
 void RetracePath(Node* start, Node* end)
 {
     Node* tracker = endNode;
-    while (tracker->parent != nullptr)
-    {
+    while (tracker->parent != nullptr) {
         // continue to update tracker to current node's parent until start node is reached:
         tracker = tracker->parent;
         // colour in found path in different colour... yellow?
@@ -191,21 +188,19 @@ void RetracePath(Node* start, Node* end)
 }
 
 /* Main Algorithm : */
-void AStarAlgorithm()
+void AStarAlgorithm(std::vector<Node>& nodes) 
 {
-    // returns distance between any two given tiles:
+    /* returns distance between any two given tiles.
+     * used for calculating g and h costs
+     * values 14 and 10 used for convenience, 10 = N-E-S-W, 14 = diagonals */
     auto distance = [](Node* a, Node* b) -> float
     {
-        return sqrtf(
-            (a->GetTilePosition().x - b->GetTilePosition().x) * (a->GetTilePosition().x - b->GetTilePosition().x) + 
-            (a->GetTilePosition().y - b->GetTilePosition().y) * (a->GetTilePosition().y - b->GetTilePosition().y));
-    };
+        int dstX = std::abs(a->GetTilePosition().x - b->GetTilePosition().x);
+        int dstY = std::abs(a->GetTilePosition().y - b->GetTilePosition().y);
 
-    // determine distance between current node's neighbour and endnode:
-    // (same as distance function basically..)
-    auto heuristic = [distance](Node* a, Node* b) -> float
-    {
-        return distance(a, b);
+        if (dstX > dstY) 
+            return 14 * dstY + 10 * (dstX + dstY);
+        return 14 * dstX + 10 * (dstY - dstX);
     };
 
     // list of nodes to test:
@@ -214,7 +209,7 @@ void AStarAlgorithm()
     std::vector<Node*> closedList{};
     openList.push_back(startNode);
 
-    while (!openList.empty())
+    while (!openList.empty()) 
     {
         std::cout << "inside while...\n";
         Node* currentNode = openList.front();
@@ -244,7 +239,7 @@ void AStarAlgorithm()
             return;
         }
 
-        /* set gcost for surrounding neighbours of currentNode(startnode by default):
+        /* calculate cheapest fcost for surrounding neighbours of currentNode(startnode by default):
          * neighbour list order is: top, right, down, left, top-left, bottom-left, top-right, bottom-right
          */
         for (auto& currentNeighbour : currentNode->neighbours)
@@ -270,7 +265,7 @@ void AStarAlgorithm()
             
             currentNeighbour->parent = currentNode;
             currentNeighbour->gcost = costToMove;
-            currentNeighbour->hcost = heuristic(currentNeighbour, endNode);
+            currentNeighbour->hcost = distance(currentNeighbour, endNode);
             currentNeighbour->fcost = currentNeighbour->gcost + currentNeighbour->hcost;
         }
     }
@@ -284,12 +279,13 @@ int main()
         "A* Pathfinding Algorithm");
     ImGui::SFML::Init(window);
 
-    // grid of nodes
+    // grid of nodes:
     std::vector<Node> nodes(mapWidth * mapHeight);
 
-    // hold current mouse coordinates:
+    // current mouse coordinates:
     sf::Vector2f mpos;
 
+    // setup tile grid:
     InitGridConnections(nodes);
 
     sf::Clock dt;
@@ -388,7 +384,7 @@ int main()
 
         // A* visualisation..
         if (algorithmStart)
-            AStarAlgorithm();
+            AStarAlgorithm(nodes);
 
         /* imgui stuff: */
         ImGui::Begin("Menu");
@@ -400,13 +396,14 @@ int main()
             for (auto& row : nodes)
                 row.tile
                     .setFillColor(sf::Color::White);
+
         ImGui::End();
 
         /* Render */
         window.clear(sf::Color::Blue);
         
         // display grid:
-        for (auto& row : nodes)
+        for (const auto& row : nodes)
             window.draw(row.tile);
      
         ImGui::SFML::Render(window);
