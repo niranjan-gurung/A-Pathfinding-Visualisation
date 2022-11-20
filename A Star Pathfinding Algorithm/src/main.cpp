@@ -246,7 +246,7 @@ void AStarAlgorithm()
 {
     /* returns distance between any two given tiles.
      * used for calculating g and h costs
-     * values 14 and 10 used for convenience, 10 = N-E-S-W, 14 = diagonals */
+     */
     auto distance = [](Node* a, Node* b) -> float
     {
         return sqrtf(
@@ -274,22 +274,26 @@ void AStarAlgorithm()
             }
         }
 
-        // remove searched node from openlist
-        // place them in closed list:
-        openList.pop_back();
+        // remove currentNode (lowest fcost node thats searched) from openlist: 
+        openList.erase(
+            std::remove(
+                openList.begin(), openList.end(), currentNode), openList.end());
+
+        // add it to closed list:
         closedList.push_back(currentNode);
 
         // end goal reached:
         if (currentNode == endNode)
         {
-            std::cout << "PATH FOUND!\n";
+            printf("PATH FOUND\n");
             RetracePath();
             algorithmStart = false;
             return;
         }
 
-        /* calculate cheapest fcost for surrounding neighbours of currentNode(startnode by default):
-         * neighbour list order is: top, right, down, left, top-left, bottom-left, top-right, bottom-right
+        /* Search surrouding neighbour nodes of currentNode (startnode by default). 
+         * order in which neighbours list is processed (counter clockwise): 
+         * left, botom, right, top, top-left, bottom-left, top-right, bottom-right.
          */
         for (auto& currentNeighbour : currentNode->neighbours)
         {
@@ -298,31 +302,29 @@ void AStarAlgorithm()
                     closedList.begin(),
                     closedList.end(),
                     currentNeighbour) != closedList.end())
-            {
-                std::cout << "this not is an obstacle!" << std::endl;
                 continue;
-            }
 
             float costToMove =
                 currentNode->gcost + distance(currentNode, currentNeighbour);
 
-            if (!(std::find(
-                openList.begin(),
-                openList.end(),
-                currentNeighbour) != openList.end()))
+            if (costToMove < currentNeighbour->gcost || 
+                !(std::find(
+                    openList.begin(),
+                    openList.end(),
+                    currentNeighbour) != openList.end()))
+            {
+                currentNeighbour->parent = currentNode;
+                currentNeighbour->gcost = costToMove;
+                currentNeighbour->hcost = distance(currentNeighbour, endNode);
+                currentNeighbour->fcost = currentNeighbour->gcost + currentNeighbour->hcost;
+                
                 openList.push_back(currentNeighbour);
-            else if (costToMove >= currentNeighbour->gcost)
-                continue;
+            }
 
-            currentNeighbour->parent = currentNode;
-            currentNeighbour->gcost = costToMove;
-            currentNeighbour->hcost = distance(currentNeighbour, endNode);
-            currentNeighbour->fcost = currentNeighbour->gcost + currentNeighbour->hcost;
-
-            std::cout
-                << "x: " << currentNeighbour->tile.getPosition().x
-                << " y: " << currentNeighbour->tile.getPosition().y
-                << " fcost: " << currentNeighbour->fcost << std::endl;
+            printf("x: %.0f y: %.0f fcost: %.0f\n", 
+                currentNeighbour->tile.getPosition().x, 
+                currentNeighbour->tile.getPosition().y, 
+                currentNeighbour->fcost);
         }
     }
 }
