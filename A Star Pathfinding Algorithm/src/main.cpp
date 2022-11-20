@@ -267,8 +267,9 @@ void AStarAlgorithm()
         // find lowest fcost node from openlist:
         for (int i = 1; i < openList.size(); i++)
         {
-            if (openList[i]->fcost <= currentNode->fcost
-                || openList[i]->hcost < currentNode->hcost)
+            if (openList[i]->fcost < currentNode->fcost
+                || openList[i]->fcost == currentNode->fcost 
+                && openList[i]->hcost < currentNode->hcost)
             {
                 currentNode = openList[i];
             }
