@@ -49,6 +49,7 @@ struct Node
     
     // walls:
     bool obstacle = false;
+    bool visited = false;
 
     float gcost = 0.0f;    // distance from start node
     float hcost = 0.0f;    // distance from end node (heuristic)
@@ -204,12 +205,9 @@ void AStarAlgorithm()
      * values 14 and 10 used for convenience, 10 = N-E-S-W, 14 = diagonals */
     auto distance = [](Node* a, Node* b) -> float
     {
-        int dstX = std::abs(a->GetTilePosition().x - b->GetTilePosition().x);
-        int dstY = std::abs(a->GetTilePosition().y - b->GetTilePosition().y);
-
-        if (dstX > dstY) 
-            return 14 * dstY + 10 * (dstX + dstY);
-        return 14 * dstX + 10 * (dstY - dstX);
+        return sqrtf(
+            std::pow(a->GetTilePosition().x - b->GetTilePosition().x, 2) +
+            std::pow(a->GetTilePosition().y - b->GetTilePosition().y, 2));
     };
 
     // list of nodes to test:
@@ -218,16 +216,15 @@ void AStarAlgorithm()
     std::vector<Node*> closedList{};
     openList.push_back(startNode);
 
-    while (!openList.empty()) 
+    while (!openList.empty())
     {
         Node* currentNode = openList.front();
 
         // find lowest fcost node from openlist:
         for (int i = 1; i < openList.size(); i++)
         {
-            if (openList[i]->fcost < currentNode->fcost 
-                || openList[i]->fcost == currentNode->fcost 
-                && openList[i]->hcost < currentNode->hcost)
+            if (openList[i]->fcost <= currentNode->fcost 
+                || openList[i]->hcost < currentNode->hcost)
             {
                 currentNode = openList[i];
             }
@@ -254,10 +251,13 @@ void AStarAlgorithm()
         {
             if (currentNeighbour->obstacle ||
                 std::find(
-                    closedList.begin(), 
-                    closedList.end(), 
+                    closedList.begin(),
+                    closedList.end(),
                     currentNeighbour) != closedList.end())
+            {
+                std::cout << "this not is an obstacle!" << std::endl;
                 continue;
+            }
 
             float costToMove = 
                 currentNode->gcost + distance(currentNode, currentNeighbour);
@@ -274,6 +274,11 @@ void AStarAlgorithm()
             currentNeighbour->gcost = costToMove;
             currentNeighbour->hcost = distance(currentNeighbour, endNode);
             currentNeighbour->fcost = currentNeighbour->gcost + currentNeighbour->hcost;
+            
+            std::cout 
+                << "x: " << currentNeighbour->tile.getPosition().x 
+                << " y: " << currentNeighbour->tile.getPosition().y 
+                << " fcost: " << currentNeighbour->fcost << std::endl;
         }
     }
 }
