@@ -32,7 +32,7 @@ sf::RenderWindow window(
     "A* Pathfinding Algorithm");
 
 // grid of nodes:
-std::vector<Node> nodes(mapWidth * mapHeight);
+std::vector<Node> nodes{ mapWidth * mapHeight };
 
 // mouse coords:
 sf::Vector2f mpos{};
@@ -149,37 +149,37 @@ void InitGridConnections()
             // top node
             if (y > 0)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[x + mapWidth * (y - 1)]);
+                    .neighbours.push_back(&nodes[x + mapWidth * (y - 1)]);
             // right node
             if (x < mapWidth - 1)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[(x + 1) + mapWidth * y]);
+                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * y]);
             // bottom node
             if (y < mapHeight - 1)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[x + mapWidth * (y + 1)]);
+                    .neighbours.push_back(&nodes[x + mapWidth * (y + 1)]);
             // left node
             if (x > 0)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[(x - 1) + mapWidth * y]);
+                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * y]);
 
             // diagonal connections:
             // top left
             if (y > 0 && x > 0)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y - 1)]);
+                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y - 1)]);
             // top right
             if (y > 0 && x < mapWidth - 1)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y - 1)]);
+                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y - 1)]);
             // bottom right
             if (y < mapHeight - 1 && x < mapWidth - 1)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y + 1)]);
+                    .neighbours.push_back(&nodes[(x + 1) + mapWidth * (y + 1)]);
             // bottom left
             if (y < mapHeight - 1 && x > 0)
                 nodes[x + mapWidth * y]
-                .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y + 1)]);
+                    .neighbours.push_back(&nodes[(x - 1) + mapWidth * (y + 1)]);
         }
     }
 }
@@ -274,7 +274,7 @@ void AStarAlgorithm()
                 currentNode = openList[i];
             }
         }
-
+            
         // remove currentNode (lowest fcost node thats searched) from openlist: 
         openList.erase(
             std::remove(
@@ -286,9 +286,8 @@ void AStarAlgorithm()
         // end goal reached:
         if (currentNode == endNode)
         {
-            printf("PATH FOUND\n");
             RetracePath();
-            algorithmStart = false;
+            algorithmStart = false;     // stops algorithm
             return;
         }
 
@@ -320,12 +319,16 @@ void AStarAlgorithm()
                 currentNeighbour->fcost = currentNeighbour->gcost + currentNeighbour->hcost;
                 
                 openList.push_back(currentNeighbour);
+                
+                // colour in searched nodes:
+                if (currentNeighbour != endNode)
+                    currentNeighbour->tile.setFillColor(sf::Color::Magenta);
             }
 
-            printf("x: %.0f y: %.0f fcost: %.0f\n", 
+            /*printf("x: %.0f y: %.0f fcost: %.0f\n", 
                 currentNeighbour->tile.getPosition().x, 
                 currentNeighbour->tile.getPosition().y, 
-                currentNeighbour->fcost);
+                currentNeighbour->fcost);*/
         }
     }
 }
